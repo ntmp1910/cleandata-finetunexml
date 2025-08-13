@@ -13,13 +13,11 @@ Công cụ này duyệt qua các thư mục chứa file `.txt` (có thể lồng
 Ví dụ: gom tất cả `.txt` trong thư mục `data` thành các file JSONL ở thư mục `out`:
 
 ```powershell
-cd D:\Viettel\cleandata-finetunexml\cleandata-finetunexml
 python -m txt_to_jsonl --input-dirs data --output-dir out --prefix dataset --max-records-per-file 50000 --summary-chars 1024 --title-source filename --title-max-chars 20
 ```
 
 Hoặc dùng line continuation với backtick:
 ```powershell
-cd D:\Viettel\cleandata-finetunexml\cleandata-finetunexml
 python -m txt_to_jsonl `
   --input-dirs data `
   --output-dir out `
@@ -52,13 +50,11 @@ python -m txt_to_jsonl `
 ### Ví dụ thêm
 Chỉ quét thư mục hiện tại, không quét thư mục con, lấy `title` từ dòng đầu tiên của file:
 ```powershell
-cd D:\Viettel\cleandata-finetunexml\cleandata-finetunexml
 python -m txt_to_jsonl --input-dirs . --output-dir out --no-subdirs --title-source firstline
 ```
 
 ### Cấu trúc thư mục hiện tại
 ```
-D:\Viettel\cleandata-finetunexml\
 └── cleandata-finetunexml\
     ├── data\           # Thư mục chứa các file .txt cần xử lý
     ├── out\            # Thư mục chứa kết quả .jsonl
