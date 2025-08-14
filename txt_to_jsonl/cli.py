@@ -37,7 +37,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--summary-chars",
         type=int,
-        default=1024,
+        default=2048,
         help="Số ký tự cho mỗi đoạn summary (mặc định: 1024).",
     )
     parser.add_argument(
@@ -170,16 +170,44 @@ def build_title(file_path: Path, title_source: str, title_max_chars: int) -> str
 
 def generate_records(
     files: Iterable[Path],
+    input_dirs: List[str],
     summary_chars: int,
     title_source: str,
     title_max_chars: int,
     split_mode: str = "single",
     chunk_overlap: int = 50,
 ) -> Generator[dict, None, None]:
+    # Chuyển đổi input_dirs thành Path objects
+    input_paths = [Path(d).resolve() for d in input_dirs]
+    
+    def get_category_from_input_dir(file_path: Path) -> str:
+        """Lấy category từ thư mục con trực tiếp của thư mục input"""
+        file_path_resolved = file_path.resolve()
+        
+        # Tìm thư mục input chứa file này
+        for input_path in input_paths:
+            try:
+                # Kiểm tra xem file có nằm trong thư mục input này không
+                if file_path_resolved.is_relative_to(input_path):
+                    # Lấy phần tương đối từ thư mục input
+                    relative_path = file_path_resolved.relative_to(input_path)
+                    # Lấy thư mục con đầu tiên (nếu có)
+                    if len(relative_path.parts) > 1:
+                        return relative_path.parts[0]
+                    else:
+                        # Nếu file nằm trực tiếp trong thư mục input
+                        return input_path.name
+            except ValueError:
+                # File không nằm trong thư mục input này, tiếp tục với thư mục khác
+                continue
+        
+        # Fallback: trả về tên thư mục cha trực tiếp của file
+        return file_path.parent.name
+    
     for file_path in files:
         try:
             title = build_title(file_path, title_source, title_max_chars)
-            category = file_path.parent.name
+            category = get_category_from_input_dir(file_path)
             
             if split_mode == "single":
                 # Chế độ cũ: 1 file = 1 object
@@ -258,6 +286,7 @@ def run(argv: Optional[List[str]] = None) -> None:
         preview_files = files[:2]
         for rec in generate_records(
             preview_files,
+            input_dirs=args.input_dirs,
             summary_chars=args.summary_chars,
             title_source=args.title_source,
             title_max_chars=args.title_max_chars,
@@ -271,6 +300,7 @@ def run(argv: Optional[List[str]] = None) -> None:
     total = write_sharded_jsonl(
         generate_records(
             files,
+            input_dirs=args.input_dirs,
             summary_chars=args.summary_chars,
             title_source=args.title_source,
             title_max_chars=args.title_max_chars,
