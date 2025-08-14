@@ -4,12 +4,12 @@ Công cụ này duyệt qua các thư mục chứa file `.txt` (có thể lồng
 
 **Chế độ single (mặc định):**
 - **title**: ~20 ký tự đầu tiên của tiêu đề (mặc định lấy theo tên file, không gồm phần mở rộng)
-- **category**: tên thư mục chứa trực tiếp file `.txt`
+- **category**: tên thư mục con trực tiếp của thư mục input 
 - **summary**: 1024 ký tự đầu tiên của nội dung file
 
 **Chế độ chunked (chia đoạn):**
 - **title**: ~20 ký tự đầu tiên của tiêu đề
-- **category**: tên thư mục chứa trực tiếp file `.txt`
+- **category**: tên thư mục con trực tiếp của thư mục input
 - **summary**: một đoạn nội dung (1024 ký tự mặc định)
 - **chunk_index**: số thứ tự đoạn (1, 2, 3...)
 - **total_chunks**: tổng số đoạn của file
@@ -81,6 +81,32 @@ python -m txt_to_jsonl --input-dirs data --output-dir out --split-mode chunked -
 ```powershell
 python -m txt_to_jsonl --input-dirs data --output-dir out --split-mode chunked --dry-run
 ```
+
+### Cấu trúc thư mục và cách lấy category
+
+**Ví dụ cấu trúc thư mục:**
+```
+data/
+├── Tâm Lý Học/
+│   ├── file1.txt
+│   └── file2.txt
+├── Sinh Học/
+│   ├── file3.txt
+│   └── file4.txt
+└── Triết Học/
+    ├── file5.txt
+    └── file6.txt
+```
+
+**Khi chạy lệnh:**
+```powershell
+python -m txt_to_jsonl --input-dirs data --output-dir out --prefix dataset
+```
+
+**Kết quả category sẽ là:**
+- `data/Tâm Lý Học/file1.txt` → category: "Tâm Lý Học"
+- `data/Sinh Học/file3.txt` → category: "Sinh Học"  
+- `data/Triết Học/file5.txt` → category: "Triết Học"
 
 ### Cấu trúc thư mục hiện tại
 ```
