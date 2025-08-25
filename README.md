@@ -5,12 +5,12 @@ Công cụ này duyệt qua các thư mục chứa file `.txt` (có thể lồng
 **Chế độ single (mặc định):**
 - **title**: ~20 ký tự đầu tiên của tiêu đề (mặc định lấy theo tên file, không gồm phần mở rộng)
 - **category**: tên thư mục con trực tiếp của thư mục input 
-- **summary**: 1024 ký tự đầu tiên của nội dung file
+- **summary**: 2048 ký tự đầu tiên của nội dung file (mặc định)
 
 **Chế độ chunked (chia đoạn):**
 - **title**: ~20 ký tự đầu tiên của tiêu đề
 - **category**: tên thư mục con trực tiếp của thư mục input
-- **summary**: một đoạn nội dung (1024 ký tự mặc định)
+- **summary**: một đoạn nội dung (mặc định 2048 ký tự, có thể điều chỉnh)
 - **chunk_index**: số thứ tự đoạn (1, 2, 3...)
 - **total_chunks**: tổng số đoạn của file
 
@@ -22,12 +22,12 @@ Công cụ này duyệt qua các thư mục chứa file `.txt` (có thể lồng
 
 **Chế độ single (1 file = 1 object):**
 ```powershell
-python -m txt_to_jsonl --input-dirs data --output-dir out --prefix dataset --split-mode single
+python -m txt_to_jsonl --input-dirs data --output-dir out --prefix dataset --split-mode single --summary-chars 2048
 ```
 
 **Chế độ chunked (1 file = nhiều object theo đoạn):**
 ```powershell
-python -m txt_to_jsonl --input-dirs data --output-dir out --prefix dataset --split-mode chunked --summary-chars 2048 --chunk-overlap 204
+python -m txt_to_jsonl --input-dirs data --output-dir out --prefix dataset --split-mode chunked --summary-chars 2048
 ```
 
 Hoặc dùng line continuation với backtick:
@@ -37,8 +37,7 @@ python -m txt_to_jsonl `
   --output-dir out `
   --prefix dataset `
   --split-mode chunked `
-  --summary-chars 1024 `
-  --chunk-overlap 50 `
+  --summary-chars 2048 `
   --title-source filename `
   --title-max-chars 20
 ```
@@ -50,8 +49,8 @@ python -m txt_to_jsonl `
 - **--input-dirs**: 1 hoặc nhiều thư mục đầu vào. Công cụ sẽ duyệt đệ quy các thư mục con và lấy tất cả `.txt`.
 - **--output-dir**: thư mục để ghi file `.jsonl`.
 - **--prefix**: tiền tố tên file output. Mặc định: `dataset`.
-- **--max-records-per-file**: số dòng tối đa mỗi file `.jsonl` trước khi tách sang file tiếp theo. Mặc định: `50000`.
-- **--summary-chars**: số ký tự cho mỗi đoạn summary. Mặc định: `1024`.
+- **--max-records-per-file**: số dòng tối đa mỗi file `.jsonl` trước khi tách sang file tiếp theo. Mặc định: `100000`.
+- **--summary-chars**: số ký tự tối đa cho mỗi đoạn summary (ảnh hưởng đến kích thước chunk khi dùng `split-mode=chunked`). Mặc định: `2048`.
 - **--title-source**: `filename` (mặc định) hoặc `firstline`.
   - `filename`: dùng tên file (bỏ `.txt`) làm tiêu đề, sau đó cắt còn `--title-max-chars` ký tự.
   - `firstline`: dùng dòng đầu tiên trong file làm tiêu đề, sau đó cắt còn `--title-max-chars` ký tự.
@@ -60,7 +59,7 @@ python -m txt_to_jsonl `
 - **--split-mode**: `single` (mặc định) hoặc `chunked`.
   - `single`: 1 file .txt = 1 object JSONL
   - `chunked`: 1 file .txt = nhiều object JSONL theo đoạn
-- **--chunk-overlap**: số dòng chồng lấp giữa các đoạn khi dùng `split-mode=chunked`. Mặc định: `50`.
+- **--chunk-overlap**:  Số dòng chồng lấp giữa các đoạn khi dùng `split-mode=chunked`.  Tính năng này hiện không được sử dụng.
 
 ### Ghi chú
 - Mặc định mở file với mã hóa `utf-8` và `errors=replace` để an toàn với các trường hợp mã hóa không chuẩn.
@@ -72,9 +71,9 @@ Chỉ quét thư mục hiện tại, không quét thư mục con, lấy `title` 
 python -m txt_to_jsonl --input-dirs . --output-dir out --no-subdirs --title-source firstline
 ```
 
-**Ví dụ chia đoạn với khoảng chồng lấp 100 dòng:**
+**Ví dụ chia đoạn:**
 ```powershell
-python -m txt_to_jsonl --input-dirs data --output-dir out --split-mode chunked --summary-chars 2048 --chunk-overlap 100
+python -m txt_to_jsonl --input-dirs data --output-dir out --split-mode chunked --summary-chars 2048
 ```
 
 **Test trước với dry-run:**
@@ -82,31 +81,10 @@ python -m txt_to_jsonl --input-dirs data --output-dir out --split-mode chunked -
 python -m txt_to_jsonl --input-dirs data --output-dir out --split-mode chunked --dry-run
 ```
 
-### Cấu trúc thư mục và cách lấy category
-
-**Ví dụ cấu trúc thư mục:**
-```
-data/
-├── Tâm Lý Học/
-│   ├── file1.txt
-│   └── file2.txt
-├── Sinh Học/
-│   ├── file3.txt
-│   └── file4.txt
-└── Triết Học/
-    ├── file5.txt
-    └── file6.txt
-```
-
 **Khi chạy lệnh:**
 ```powershell
 python -m txt_to_jsonl --input-dirs data --output-dir out --prefix dataset
 ```
-
-**Kết quả category sẽ là:**
-- `data/Tâm Lý Học/file1.txt` → category: "Tâm Lý Học"
-- `data/Sinh Học/file3.txt` → category: "Sinh Học"  
-- `data/Triết Học/file5.txt` → category: "Triết Học"
 
 ### Cấu trúc thư mục hiện tại
 ```
