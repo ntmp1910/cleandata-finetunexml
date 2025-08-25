@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from typing import Generator, Iterable, List, Optional
+import re
 
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
@@ -113,7 +114,7 @@ def read_first_n_chars(file_path: Path, limit: int) -> str:
 
 
 def read_file_chunks(file_path: Path, chunk_size: int, overlap: int) -> List[str]:
-    """Đọc file và chia thành các đoạn với khoảng chồng lấp."""
+    """Đọc file và chia thành các đoạn văn bản có nghĩa với khoảng chồng lấp, đảm bảo không cắt câu."""
     if chunk_size <= 0:
         return []
     
@@ -123,29 +124,24 @@ def read_file_chunks(file_path: Path, chunk_size: int, overlap: int) -> List[str
     if not content:
         return []
     
-    chunks = []
-    start = 0
+    # Lọc bỏ các ký tự không phải tiếng Việt và các ký tự đặc biệt không mong muốn
+    content = re.sub(r'[^\w\s.,?!:;()"\'\u00C0-\u1FFF]+', '', content)
     
-    while start < len(content):
-        end = start + chunk_size
-        chunk = content[start:end]
-        chunks.append(chunk)
-        
-        # Tính vị trí bắt đầu cho đoạn tiếp theo với khoảng chồng lấp
-        if end >= len(content):
-            break
-        
-        # Tìm vị trí kết thúc dòng gần nhất trong khoảng chồng lấp
-        overlap_start = max(start + chunk_size - overlap, start)
-        overlap_end = min(end, len(content))
-        overlap_text = content[overlap_start:overlap_end]
-        
-        # Tìm dòng cuối cùng trong khoảng chồng lấp
-        last_newline = overlap_text.rfind('\n')
-        if last_newline != -1:
-            start = overlap_start + last_newline + 1
+    sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|!)\s', content)
+    
+    chunks = []
+    current_chunk = ""
+    
+    for sentence in sentences:
+        if len(current_chunk) + len(sentence) + 1 <= chunk_size:
+            current_chunk += sentence + " "  # Thêm câu vào chunk hiện tại
         else:
-            start = end
+            if current_chunk:
+                chunks.append(current_chunk.strip())  # Lưu chunk hiện tại
+            current_chunk = sentence + " "  # Bắt đầu một chunk mới
+    
+    if current_chunk:
+        chunks.append(current_chunk.strip())  # Lưu chunk cuối cùng
     
     return chunks
 
